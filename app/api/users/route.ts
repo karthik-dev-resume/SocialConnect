@@ -1,9 +1,9 @@
 import { NextRequest } from 'next/server'
 import { listUsers } from '@/lib/db/queries'
-import { requireAuth } from '@/lib/middleware/auth'
+import { requireAdmin, type AuthenticatedRequest } from '@/lib/middleware/auth'
 import type { User } from '@/lib/db/types'
 
-async function handler(req: NextRequest) {
+async function handler(req: AuthenticatedRequest) {
   try {
     const searchParams = req.nextUrl.searchParams
     const limit = parseInt(searchParams.get('limit') || '50')
@@ -30,5 +30,5 @@ async function handler(req: NextRequest) {
   }
 }
 
-export const GET = requireAuth(handler)
+export const GET = requireAdmin(handler)
 

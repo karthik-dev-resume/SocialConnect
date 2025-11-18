@@ -3,9 +3,17 @@ import { requireAdmin, type AuthenticatedRequest } from '@/lib/middleware/auth'
 import { getUserById, getUserStats } from '@/lib/db/queries'
 import type { User } from '@/lib/db/types'
 
-async function handler(req: AuthenticatedRequest, { params }: { params: { user_id: string } }) {
+async function handler(req: AuthenticatedRequest, { params }: { params: Promise<{ user_id: string }> | { user_id: string } }) {
   try {
-    const userId = params.user_id
+    const resolvedParams = params instanceof Promise ? await params : params
+    const userId = resolvedParams.user_id
+
+    if (!userId) {
+      return Response.json(
+        { error: 'User ID is required' },
+        { status: 400 }
+      )
+    }
 
     const user = await getUserById(userId)
     if (!user) {
