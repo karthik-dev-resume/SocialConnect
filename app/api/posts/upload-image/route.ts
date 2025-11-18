@@ -35,20 +35,38 @@ async function handler(req: AuthenticatedRequest) {
     // Upload to Supabase Storage
     const supabase = createAdminClient()
     const fileExt = file.name.split('.').pop()
-    const fileName = `${req.user!.userId}-${Date.now()}.${fileExt}`
+    const fileName = `${req.user!.userId}-${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`
     const filePath = `posts/${fileName}`
 
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('posts')
       .upload(filePath, file, {
         contentType: file.type,
-        upsert: false,
+        upsert: true, // Allow overwriting if file exists
       })
 
     if (uploadError) {
-      console.error('Upload error:', uploadError)
+      console.error('Upload error details:', {
+        message: uploadError.message,
+        statusCode: uploadError.statusCode,
+        error: uploadError.error,
+        name: uploadError.name,
+      })
+      
+      // Provide more specific error messages
+      let errorMessage = 'Failed to upload file'
+      const errorMsgLower = uploadError.message?.toLowerCase() || ''
+      
+      if (errorMsgLower.includes('bucket not found') || uploadError.statusCode === '404') {
+        errorMessage = 'Bucket not found. Please create a storage bucket named "posts" in your Supabase dashboard (Storage section).'
+      } else if (uploadError.statusCode === '403' || errorMsgLower.includes('permission')) {
+        errorMessage = 'Permission denied. Check storage bucket permissions in Supabase dashboard.'
+      } else if (uploadError.message) {
+        errorMessage = uploadError.message
+      }
+      
       return Response.json(
-        { error: 'Failed to upload file' },
+        { error: errorMessage },
         { status: 500 }
       )
     }
@@ -64,8 +82,9 @@ async function handler(req: AuthenticatedRequest) {
     })
   } catch (error) {
     console.error('Image upload error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error'
     return Response.json(
-      { error: 'Internal server error' },
+      { error: errorMessage },
       { status: 500 }
     )
   }

@@ -9,6 +9,8 @@ import { apiRequest } from "@/lib/api/client";
 import type { Post } from "@/lib/db/types";
 import { toast } from "sonner";
 import { Spinner } from "@/components/ui/spinner";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
 
 export default function FeedPage() {
   const { user, loading: authLoading } = useAuth();
@@ -51,24 +53,52 @@ export default function FeedPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
       <Navbar />
-      <div className="max-w-3xl mx-auto px-4 py-8">
-        <CreatePost onPostCreated={fetchPosts} />
+      <div className="max-w-3xl mx-auto px-4 py-8 space-y-6">
+        {/* Create Post Button */}
+        <CreatePost
+          onPostCreated={() => {
+            fetchPosts();
+          }}
+        />
+
+        {/* Posts Feed */}
         {loading ? (
-          <div className="text-center py-8">
+          <div className="flex flex-col items-center justify-center py-16">
             <Spinner size="lg" />
+            <p className="mt-4 text-muted-foreground">Loading posts</p>
           </div>
         ) : posts.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-gray-500">
-              No posts yet. Be the first to create a post!
-            </p>
+          <div className="text-center py-16 px-4">
+            <div className="max-w-md mx-auto space-y-4">
+              <div className="w-16 h-16 mx-auto bg-muted rounded-full flex items-center justify-center">
+                <Plus className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-xl font-semibold text-foreground">
+                No posts yet
+              </h3>
+              <p className="text-muted-foreground">
+                Be the first to share something with the community!
+              </p>
+              <Button
+                onClick={() => {
+                  // Scroll to top and focus on create post
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                className="mt-4"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Create Your First Post
+              </Button>
+            </div>
           </div>
         ) : (
-          posts.map((post) => (
-            <PostCard key={post.id} post={post} onUpdate={fetchPosts} />
-          ))
+          <div className="space-y-4">
+            {posts.map((post) => (
+              <PostCard key={post.id} post={post} />
+            ))}
+          </div>
         )}
       </div>
     </div>

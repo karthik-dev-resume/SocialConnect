@@ -1,24 +1,24 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import { useAuth } from '@/lib/hooks/use-auth'
-import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import Link from "next/link";
+import { useAuth } from "@/lib/hooks/use-auth";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Home, User, Settings, LogOut, Shield } from 'lucide-react'
+} from "@/components/ui/dropdown-menu";
+import { Home, User, Settings, LogOut, Shield } from "lucide-react";
 
 export function Navbar() {
-  const { user, logout } = useAuth()
+  const { user, logout } = useAuth();
 
-  if (!user) return null
+  if (!user) return null;
 
-  const initials = `${user.first_name[0]}${user.last_name[0]}`.toUpperCase()
+  const initials = `${user.first_name[0]}${user.last_name[0]}`.toUpperCase();
 
   return (
     <nav className="border-b bg-white sticky top-0 z-50">
@@ -41,8 +41,8 @@ export function Navbar() {
                   Profile
                 </Button>
               </Link>
-              {user.role === 'admin' && (
-                <Link href="/admin">
+              {user.role === "admin" && (
+                <Link href="/admin-dashboard">
                   <Button variant="ghost" size="sm">
                     <Shield className="mr-2 h-4 w-4" />
                     Admin
@@ -53,7 +53,10 @@ export function Navbar() {
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+              <Button
+                variant="ghost"
+                className="relative h-10 w-10 rounded-full"
+              >
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={user.avatar_url} alt={user.username} />
                   <AvatarFallback>{initials}</AvatarFallback>
@@ -62,7 +65,9 @@ export function Navbar() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <div className="px-2 py-1.5">
-                <p className="text-sm font-medium">{user.first_name} {user.last_name}</p>
+                <p className="text-sm font-medium">
+                  {user.first_name} {user.last_name}
+                </p>
                 <p className="text-xs text-gray-500">@{user.username}</p>
               </div>
               <DropdownMenuSeparator />
@@ -78,8 +83,8 @@ export function Navbar() {
                   Settings
                 </DropdownMenuItem>
               </Link>
-              {user.role === 'admin' && (
-                <Link href="/admin">
+              {user.role === "admin" && (
+                <Link href="/admin-dashboard">
                   <DropdownMenuItem>
                     <Shield className="mr-2 h-4 w-4" />
                     Admin Dashboard
@@ -96,6 +101,5 @@ export function Navbar() {
         </div>
       </div>
     </nav>
-  )
+  );
 }
-

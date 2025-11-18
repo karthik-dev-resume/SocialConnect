@@ -43,13 +43,22 @@ async function handler(req: AuthenticatedRequest) {
       .from('avatars')
       .upload(filePath, file, {
         contentType: file.type,
-        upsert: false,
+        upsert: true, // Allow overwriting if file exists
       })
 
     if (uploadError) {
       console.error('Upload error:', uploadError)
+      
+      // Provide more specific error messages
+      let errorMessage = 'Failed to upload file'
+      if (uploadError.message?.includes('Bucket not found') || uploadError.message?.includes('bucket')) {
+        errorMessage = 'Storage bucket "avatars" not found. Please create it in your Supabase dashboard under Storage.'
+      } else if (uploadError.message) {
+        errorMessage = uploadError.message
+      }
+      
       return Response.json(
-        { error: 'Failed to upload file' },
+        { error: errorMessage },
         { status: 500 }
       )
     }
