@@ -68,14 +68,14 @@ export function PostCard({ post, onUpdate }: PostCardProps) {
   // Check if we're on the post details page
   const isPostDetailsPage = pathname?.startsWith(`/posts/${post.id}`);
 
+  const author = post.author;
+
   // Update isLiked when post prop changes
   useEffect(() => {
     setIsLiked(post.is_liked || false);
     setLikeCount(post.like_count);
     setEditContent(post.content);
   }, [post]);
-
-  const author = post.author;
   const authorName = author
     ? `${author.first_name} ${author.last_name}`
     : "Unknown";

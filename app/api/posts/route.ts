@@ -25,10 +25,52 @@ async function handler(req: AuthenticatedRequest) {
         posts = await listPosts(limit, offset, authorId)
       }
 
+      // Filter posts based on author's profile visibility and active status
+      const { checkFollow } = await import('@/lib/db/queries')
+      const filteredPosts = await Promise.all(
+        posts.map(async (post) => {
+          // Filter out posts from inactive users
+          if (post.author && (post.author as any).is_active === false) {
+            return null // Filter out posts from inactive users
+          }
+          
+          // If post has author info, check visibility
+          if (post.author && (post.author as any).profile_visibility) {
+            const author = post.author as any
+            const profileVisibility = author.profile_visibility
+            
+            // If author is private and viewer is not the author, check if following
+            if (
+              profileVisibility === 'private' &&
+              req.user!.userId !== author.id
+            ) {
+              const isFollowing = await checkFollow(req.user!.userId, author.id)
+              if (!isFollowing) {
+                return null // Filter out this post
+              }
+            }
+            // If author is followers_only and viewer is not the author, check if following
+            if (
+              profileVisibility === 'followers_only' &&
+              req.user!.userId !== author.id
+            ) {
+              const isFollowing = await checkFollow(req.user!.userId, author.id)
+              if (!isFollowing) {
+                return null // Filter out this post
+              }
+            }
+          }
+          return post
+        })
+      )
+
+      // Remove null posts (filtered out)
+      const visiblePosts = filteredPosts.filter((post) => post !== null) as typeof posts
+
       // Add like status for current user to each post
       const { checkLike } = await import('@/lib/db/queries')
       const postsWithLikeStatus = await Promise.all(
-        posts.map(async (post) => {
+        visiblePosts.map(async (post) => {
           const isLiked = await checkLike(post.id, req.user!.userId)
           return {
             ...post,
@@ -40,6 +82,7 @@ async function handler(req: AuthenticatedRequest) {
       return Response.json({
         results: postsWithLikeStatus,
         count: postsWithLikeStatus.length,
+        has_more: postsWithLikeStatus.length === limit,
       })
     }
 

@@ -26,32 +26,8 @@ async function handler(req: AuthenticatedRequest, { params }: { params: Promise<
       )
     }
 
-    // Check profile visibility
-    if (user.profile_visibility === 'private' && req.user?.userId !== userId) {
-      return Response.json(
-        { error: 'Profile is private' },
-        { status: 403 }
-      )
-    }
-
-    if (user.profile_visibility === 'followers_only' && req.user?.userId !== userId) {
-      // Check if current user follows this user
-      const { createAdminClient } = await import('@/lib/supabase/admin')
-      const supabase = createAdminClient()
-      const { data: follow } = await supabase
-        .from('follows')
-        .select('id')
-        .eq('follower_id', req.user!.userId)
-        .eq('following_id', userId)
-        .single()
-
-      if (!follow) {
-        return Response.json(
-          { error: 'Profile is only visible to followers' },
-          { status: 403 }
-        )
-      }
-    }
+    // Allow viewing profile regardless of visibility
+    // Posts will be filtered separately based on visibility
 
     const stats = await getUserStats(userId)
     const { password_hash: _, ...userResponse } = user as User & { password_hash?: string }

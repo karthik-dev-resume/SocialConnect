@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useAuth } from "@/lib/hooks/use-auth";
 import { Navbar } from "@/components/navbar";
 import { CreatePost } from "@/components/create-post";
@@ -12,31 +12,79 @@ import { Spinner } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 
+const POSTS_PER_PAGE = 20;
+
 export default function FeedPage() {
   const { user, loading: authLoading } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const offsetRef = useRef(0);
+  const observerTarget = useRef<HTMLDivElement>(null);
 
-  const fetchPosts = async () => {
+  const fetchPosts = useCallback(async (reset = false) => {
     try {
-      setLoading(true);
-      // Fetch all posts (not just followed users)
-      const data = await apiRequest<{ results: Post[] }>("/api/posts");
-      setPosts(data.results);
+      if (reset) {
+        setLoading(true);
+        offsetRef.current = 0;
+      } else {
+        setLoadingMore(true);
+      }
+
+      const offsetToUse = reset ? 0 : offsetRef.current;
+      const data = await apiRequest<{ results: Post[]; has_more?: boolean }>(
+        `/api/posts?limit=${POSTS_PER_PAGE}&offset=${offsetToUse}`
+      );
+
+      if (reset) {
+        setPosts(data.results);
+      } else {
+        setPosts((prev) => [...prev, ...data.results]);
+      }
+
+      setHasMore(data.has_more ?? data.results.length === POSTS_PER_PAGE);
+      offsetRef.current = offsetToUse + data.results.length;
     } catch (error: unknown) {
       const message =
         error instanceof Error ? error.message : "Failed to load posts";
       toast.error(message);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
-  };
+  }, []);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    if (!user || loading || !hasMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore) {
+          fetchPosts(false);
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
+    };
+  }, [user, loading, hasMore, loadingMore, fetchPosts]);
 
   useEffect(() => {
     if (!authLoading && user) {
-      fetchPosts();
+      fetchPosts(true);
     }
-  }, [authLoading, user]);
+  }, [authLoading, user, fetchPosts]);
 
   if (authLoading) {
     return (
@@ -59,7 +107,7 @@ export default function FeedPage() {
         {/* Create Post Button */}
         <CreatePost
           onPostCreated={() => {
-            fetchPosts();
+            fetchPosts(true);
           }}
         />
 
@@ -94,11 +142,24 @@ export default function FeedPage() {
             </div>
           </div>
         ) : (
-          <div className="space-y-4">
-            {posts.map((post) => (
-              <PostCard key={post.id} post={post} />
-            ))}
-          </div>
+          <>
+            <div className="space-y-4">
+              {posts.map((post) => (
+                <PostCard key={post.id} post={post} />
+              ))}
+            </div>
+            {/* Infinite scroll trigger */}
+            {hasMore && (
+              <div ref={observerTarget} className="flex justify-center py-8">
+                {loadingMore && <Spinner size="lg" />}
+              </div>
+            )}
+            {!hasMore && posts.length > 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <p>No more posts to load</p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
