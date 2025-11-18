@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
@@ -13,38 +13,52 @@ import type { Post } from '@/lib/db/types'
 import { useAuth } from '@/lib/hooks/use-auth'
 
 interface PostCardProps {
-  post: Post
+  post: Post & { is_liked?: boolean; author?: { id: string; first_name: string; last_name: string; username: string; avatar_url?: string } }
   onUpdate?: () => void
 }
 
 export function PostCard({ post, onUpdate }: PostCardProps) {
-  const [isLiked, setIsLiked] = useState(false)
+  // Initialize isLiked from post.is_liked if available
+  const [isLiked, setIsLiked] = useState(post.is_liked || false)
   const [likeCount, setLikeCount] = useState(post.like_count)
   const [loading, setLoading] = useState(false)
   const { user } = useAuth()
 
-  const author = post.author || (post as any).author
+  // Update isLiked when post prop changes
+  useEffect(() => {
+    setIsLiked(post.is_liked || false)
+    setLikeCount(post.like_count)
+  }, [post])
+
+  const author = post.author
   const authorName = author ? `${author.first_name} ${author.last_name}` : 'Unknown'
   const authorUsername = author?.username || 'unknown'
   const initials = author ? `${author.first_name[0]}${author.last_name[0]}`.toUpperCase() : 'U'
 
   const handleLike = async () => {
-    if (loading) return
+    if (loading || !user) return
     setLoading(true)
 
     try {
-      if (isLiked) {
-        await apiRequest(`/api/posts/${post.id}/like`, { method: 'DELETE' })
-        setIsLiked(false)
-        setLikeCount((prev) => Math.max(0, prev - 1))
+      // POST toggles like/unlike
+      const response = await apiRequest<{ liked: boolean; post: Post }>(
+        `/api/posts/${post.id}/like`,
+        { method: 'POST' }
+      )
+      
+      // Update state based on response
+      setIsLiked(response.liked)
+      if (response.post) {
+        setLikeCount(response.post.like_count)
       } else {
-        await apiRequest(`/api/posts/${post.id}/like`, { method: 'POST' })
-        setIsLiked(true)
-        setLikeCount((prev) => prev + 1)
+        // Fallback: update count based on like status
+        setLikeCount((prev) => response.liked ? prev + 1 : Math.max(0, prev - 1))
       }
+      
       onUpdate?.()
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to like post')
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to like post'
+      toast.error(message)
     } finally {
       setLoading(false)
     }
@@ -96,10 +110,10 @@ export function PostCard({ post, onUpdate }: PostCardProps) {
             variant="ghost"
             size="sm"
             onClick={handleLike}
-            disabled={loading}
-            className={isLiked ? 'text-red-500' : ''}
+            disabled={loading || !user}
+            className={isLiked ? 'text-red-500 hover:text-red-600' : ''}
           >
-            <Heart className={`h-4 w-4 mr-2 ${isLiked ? 'fill-current' : ''}`} />
+            <Heart className={`h-4 w-4 mr-2 ${isLiked ? 'fill-current text-red-500' : ''}`} />
             {likeCount}
           </Button>
           <Link href={`/posts/${post.id}`}>

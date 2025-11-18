@@ -10,10 +10,24 @@ const updateCommentSchema = z.object({
 
 async function handler(
   req: AuthenticatedRequest,
-  { params }: { params: { post_id: string; comment_id: string } }
+  {
+    params,
+  }: {
+    params:
+      | Promise<{ post_id: string; comment_id: string }>
+      | { post_id: string; comment_id: string }
+  }
 ) {
   try {
-    const { post_id: postId, comment_id: commentId } = params
+    const resolvedParams = params instanceof Promise ? await params : params
+    const { post_id: postId, comment_id: commentId } = resolvedParams
+
+    if (!postId || !commentId) {
+      return Response.json(
+        { error: 'Post ID and Comment ID are required' },
+        { status: 400 }
+      )
+    }
 
     // Check if post exists
     const post = await getPostById(postId)

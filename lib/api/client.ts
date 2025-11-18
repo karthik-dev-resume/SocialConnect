@@ -6,7 +6,7 @@ if (!API_BASE_URL) {
 
 export interface ApiError {
   error: string
-  details?: any
+  details?: unknown
 }
 
 export async function apiRequest<T>(

@@ -50,8 +50,9 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
 
       setImageUrl(data.image_url)
       toast.success('Image uploaded successfully')
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to upload image')
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to upload image';
+      toast.error(errorMessage)
       setImageFile(null)
     } finally {
       setLoading(false)
@@ -87,8 +88,9 @@ export function CreatePost({ onPostCreated }: CreatePostProps) {
       setImageFile(null)
       toast.success('Post created successfully!')
       onPostCreated?.()
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to create post')
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to create post';
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }

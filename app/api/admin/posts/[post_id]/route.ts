@@ -2,9 +2,20 @@ import { NextRequest } from 'next/server'
 import { requireAdmin, type AuthenticatedRequest } from '@/lib/middleware/auth'
 import { getPostById, deletePost } from '@/lib/db/queries'
 
-async function handler(req: AuthenticatedRequest, { params }: { params: { post_id: string } }) {
+async function handler(
+  req: AuthenticatedRequest,
+  { params }: { params: Promise<{ post_id: string }> | { post_id: string } }
+) {
   try {
-    const postId = params.post_id
+    const resolvedParams = params instanceof Promise ? await params : params
+    const postId = resolvedParams.post_id
+
+    if (!postId) {
+      return Response.json(
+        { error: 'Post ID is required' },
+        { status: 400 }
+      )
+    }
 
     if (req.method === 'DELETE') {
       const post = await getPostById(postId)

@@ -2,9 +2,17 @@ import { NextRequest } from 'next/server'
 import { requireAuth, type AuthenticatedRequest } from '@/lib/middleware/auth'
 import { createFollow, deleteFollow, checkFollow, getUserById } from '@/lib/db/queries'
 
-async function handler(req: AuthenticatedRequest, { params }: { params: { user_id: string } }) {
+async function handler(req: AuthenticatedRequest, { params }: { params: Promise<{ user_id: string }> | { user_id: string } }) {
   try {
-    const followingId = params.user_id
+    const resolvedParams = params instanceof Promise ? await params : params
+    const followingId = resolvedParams.user_id
+
+    if (!followingId) {
+      return Response.json(
+        { error: 'User ID is required' },
+        { status: 400 }
+      )
+    }
     const followerId = req.user!.userId
 
     // Can't follow yourself

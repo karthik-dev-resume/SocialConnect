@@ -34,8 +34,9 @@ export default function PostDetailPage() {
 
       setPost(postData)
       setComments(commentsData.results)
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to load post')
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load post';
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -60,8 +61,9 @@ export default function PostDetailPage() {
       setCommentContent('')
       toast.success('Comment added!')
       fetchPost()
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to add comment')
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to add comment';
+      toast.error(errorMessage)
     } finally {
       setSubmitting(false)
     }
@@ -131,7 +133,19 @@ export default function PostDetailPage() {
                 <p className="text-gray-500 text-center py-4">No comments yet</p>
               ) : (
                 comments.map((comment) => {
-                  const commentUser = (comment as any).user || comment
+                  const commentUser = comment.user || {
+                    id: comment.user_id,
+                    first_name: 'Unknown',
+                    last_name: 'User',
+                    username: 'unknown',
+                    email: '',
+                    role: 'user' as const,
+                    profile_visibility: 'public' as const,
+                    is_active: true,
+                    is_verified: false,
+                    created_at: '',
+                    updated_at: '',
+                  }
                   const initials = commentUser.first_name
                     ? `${commentUser.first_name[0]}${commentUser.last_name[0]}`.toUpperCase()
                     : 'U'

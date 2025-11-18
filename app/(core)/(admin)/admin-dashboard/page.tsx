@@ -1,120 +1,126 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import { useAuth } from '@/lib/hooks/use-auth'
-import { Navbar } from '@/components/navbar'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { apiRequest } from '@/lib/api/client'
-import { toast } from 'sonner'
-import { Users, FileText, Activity, Trash2, Shield, ShieldOff } from 'lucide-react'
-import type { User, Post } from '@/lib/db/types'
+import { useEffect, useState } from "react";
+import { useAuth } from "@/lib/hooks/use-auth";
+import { Navbar } from "@/components/navbar";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { apiRequest } from "@/lib/api/client";
+import { toast } from "sonner";
+import { Users, FileText, Activity, Trash2, Shield } from "lucide-react";
+import type { User, Post } from "@/lib/db/types";
 
 interface Stats {
-  total_users: number
-  total_posts: number
-  active_today: number
+  total_users: number;
+  total_posts: number;
+  active_today: number;
 }
 
 export default function AdminPage() {
-  const { user: currentUser } = useAuth()
-  const [stats, setStats] = useState<Stats | null>(null)
-  const [users, setUsers] = useState<User[]>([])
-  const [posts, setPosts] = useState<Post[]>([])
-  const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'stats' | 'users' | 'posts'>('stats')
+  const { user: currentUser } = useAuth();
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"stats" | "users" | "posts">(
+    "stats"
+  );
 
   useEffect(() => {
-    if (currentUser?.role !== 'admin') {
-      return
-    }
-
-    fetchStats()
-    fetchUsers()
-    fetchPosts()
-  }, [currentUser])
+    fetchStats();
+    fetchUsers();
+    fetchPosts();
+  }, []);
 
   const fetchStats = async () => {
     try {
-      const data = await apiRequest<Stats>('/api/admin/stats')
-      setStats(data)
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to load stats')
+      const data = await apiRequest<Stats>("/api/admin/stats");
+      setStats(data);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to load stats";
+      toast.error(errorMessage);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const fetchUsers = async () => {
     try {
-      const data = await apiRequest<{ results: User[] }>('/api/admin/users')
-      setUsers(data.results)
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to load users')
+      const data = await apiRequest<{ results: User[] }>("/api/admin/users");
+      setUsers(data.results);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to load users";
+      toast.error(errorMessage);
     }
-  }
+  };
 
   const fetchPosts = async () => {
     try {
-      const data = await apiRequest<{ results: Post[] }>('/api/admin/posts')
-      setPosts(data.results)
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to load posts')
+      const data = await apiRequest<{ results: Post[] }>("/api/admin/posts");
+      setPosts(data.results);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to load posts";
+      toast.error(errorMessage);
     }
-  }
+  };
 
   const handleDeactivateUser = async (userId: string) => {
-    if (!confirm('Are you sure you want to deactivate this user?')) return
+    if (!confirm("Are you sure you want to deactivate this user?")) return;
 
     try {
-      await apiRequest(`/api/admin/users/${userId}/deactivate`, { method: 'POST' })
-      toast.success('User deactivated successfully')
-      fetchUsers()
-      fetchStats()
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to deactivate user')
+      await apiRequest(`/api/admin/users/${userId}/deactivate`, {
+        method: "POST",
+      });
+      toast.success("User deactivated successfully");
+      fetchUsers();
+      fetchStats();
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to deactivate user";
+      toast.error(errorMessage);
     }
-  }
+  };
 
   const handlePromoteToAdmin = async (userId: string) => {
-    if (!confirm('Are you sure you want to promote this user to admin?')) return
+    if (!confirm("Are you sure you want to promote this user to admin?"))
+      return;
 
     try {
-      await apiRequest(`/api/admin/users/${userId}/promote`, { method: 'POST' })
-      toast.success('User promoted to admin successfully')
-      fetchUsers()
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to promote user')
+      await apiRequest(`/api/admin/users/${userId}/promote`, {
+        method: "POST",
+      });
+      toast.success("User promoted to admin successfully");
+      fetchUsers();
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to promote user";
+      toast.error(errorMessage);
     }
-  }
+  };
 
   const handleDeletePost = async (postId: string) => {
-    if (!confirm('Are you sure you want to delete this post?')) return
+    if (!confirm("Are you sure you want to delete this post?")) return;
 
     try {
-      await apiRequest(`/api/admin/posts/${postId}`, { method: 'DELETE' })
-      toast.success('Post deleted successfully')
-      fetchPosts()
-      fetchStats()
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to delete post')
+      await apiRequest(`/api/admin/posts/${postId}`, { method: "DELETE" });
+      toast.success("Post deleted successfully");
+      fetchPosts();
+      fetchStats();
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to delete post";
+      toast.error(errorMessage);
     }
-  }
-
-  if (currentUser?.role !== 'admin') {
-    return (
-      <div className="min-h-screen bg-gray-50">
-        <Navbar />
-        <div className="max-w-4xl mx-auto px-4 py-8">
-          <Card>
-            <CardContent className="py-8 text-center">
-              <p className="text-gray-500">Access denied. Admin only.</p>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    )
-  }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -124,29 +130,29 @@ export default function AdminPage() {
 
         <div className="flex space-x-2 mb-6">
           <Button
-            variant={activeTab === 'stats' ? 'default' : 'outline'}
-            onClick={() => setActiveTab('stats')}
+            variant={activeTab === "stats" ? "default" : "outline"}
+            onClick={() => setActiveTab("stats")}
           >
             <Activity className="mr-2 h-4 w-4" />
             Statistics
           </Button>
           <Button
-            variant={activeTab === 'users' ? 'default' : 'outline'}
-            onClick={() => setActiveTab('users')}
+            variant={activeTab === "users" ? "default" : "outline"}
+            onClick={() => setActiveTab("users")}
           >
             <Users className="mr-2 h-4 w-4" />
             Users
           </Button>
           <Button
-            variant={activeTab === 'posts' ? 'default' : 'outline'}
-            onClick={() => setActiveTab('posts')}
+            variant={activeTab === "posts" ? "default" : "outline"}
+            onClick={() => setActiveTab("posts")}
           >
             <FileText className="mr-2 h-4 w-4" />
             Posts
           </Button>
         </div>
 
-        {activeTab === 'stats' && stats && (
+        {activeTab === "stats" && stats && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <Card>
               <CardHeader>
@@ -175,7 +181,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {activeTab === 'users' && (
+        {activeTab === "users" && (
           <Card>
             <CardHeader>
               <CardTitle>All Users</CardTitle>
@@ -191,21 +197,24 @@ export default function AdminPage() {
                     <div>
                       <p className="font-semibold">
                         {user.first_name} {user.last_name}
-                        {user.role === 'admin' && (
+                        {user.role === "admin" && (
                           <span className="ml-2 text-xs bg-purple-100 text-purple-800 px-2 py-1 rounded">
                             Admin
                           </span>
                         )}
                       </p>
-                      <p className="text-sm text-gray-500">@{user.username} • {user.email}</p>
+                      <p className="text-sm text-gray-500">
+                        @{user.username} • {user.email}
+                      </p>
                       <p className="text-xs text-gray-400">
-                        Role: {user.role} • Status: {user.is_active ? 'Active' : 'Inactive'}
+                        Role: {user.role} • Status:{" "}
+                        {user.is_active ? "Active" : "Inactive"}
                       </p>
                     </div>
                     <div className="flex gap-2">
                       {user.is_active && user.id !== currentUser?.id && (
                         <>
-                          {user.role !== 'admin' && (
+                          {user.role !== "admin" && (
                             <Button
                               variant="outline"
                               size="sm"
@@ -232,7 +241,7 @@ export default function AdminPage() {
           </Card>
         )}
 
-        {activeTab === 'posts' && (
+        {activeTab === "posts" && (
           <Card>
             <CardHeader>
               <CardTitle>All Posts</CardTitle>
@@ -241,18 +250,17 @@ export default function AdminPage() {
             <CardContent>
               <div className="space-y-4">
                 {posts.map((post) => (
-                  <div
-                    key={post.id}
-                    className="p-4 border rounded-lg"
-                  >
+                  <div key={post.id} className="p-4 border rounded-lg">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <p className="font-semibold mb-2">{post.content}</p>
                         <p className="text-sm text-gray-500">
-                          Author ID: {post.author_id} • Created: {new Date(post.created_at).toLocaleDateString()}
+                          Author ID: {post.author_id} • Created:{" "}
+                          {new Date(post.created_at).toLocaleDateString()}
                         </p>
                         <p className="text-xs text-gray-400">
-                          Likes: {post.like_count} • Comments: {post.comment_count}
+                          Likes: {post.like_count} • Comments:{" "}
+                          {post.comment_count}
                         </p>
                       </div>
                       <Button
@@ -271,6 +279,5 @@ export default function AdminPage() {
         )}
       </div>
     </div>
-  )
+  );
 }
-

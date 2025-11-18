@@ -2,9 +2,20 @@ import { NextRequest } from 'next/server'
 import { requireAuth, type AuthenticatedRequest } from '@/lib/middleware/auth'
 import { createLike, deleteLike, checkLike, getPostById } from '@/lib/db/queries'
 
-async function handler(req: AuthenticatedRequest, { params }: { params: { post_id: string } }) {
+async function handler(
+  req: AuthenticatedRequest,
+  { params }: { params: Promise<{ post_id: string }> | { post_id: string } }
+) {
   try {
-    const postId = params.post_id
+    const resolvedParams = params instanceof Promise ? await params : params
+    const postId = resolvedParams.post_id
+
+    if (!postId) {
+      return Response.json(
+        { error: 'Post ID is required' },
+        { status: 400 }
+      )
+    }
 
     // Check if post exists
     const post = await getPostById(postId)
@@ -16,29 +27,40 @@ async function handler(req: AuthenticatedRequest, { params }: { params: { post_i
     }
 
     if (req.method === 'POST') {
-      // Check if already liked
+      // Toggle like: if already liked, unlike it; if not liked, like it
       const isLiked = await checkLike(postId, req.user!.userId)
+      
       if (isLiked) {
-        return Response.json(
-          { error: 'Post already liked' },
-          { status: 400 }
-        )
+        // Unlike the post
+        const success = await deleteLike(postId, req.user!.userId)
+        if (!success) {
+          return Response.json(
+            { error: 'Failed to unlike post' },
+            { status: 500 }
+          )
+        }
+        const updatedPost = await getPostById(postId)
+        return Response.json({
+          message: 'Post unliked successfully',
+          post: updatedPost,
+          liked: false,
+        })
+      } else {
+        // Like the post
+        const like = await createLike(postId, req.user!.userId)
+        if (!like) {
+          return Response.json(
+            { error: 'Failed to like post' },
+            { status: 500 }
+          )
+        }
+        const updatedPost = await getPostById(postId)
+        return Response.json({
+          message: 'Post liked successfully',
+          post: updatedPost,
+          liked: true,
+        })
       }
-
-      const like = await createLike(postId, req.user!.userId)
-      if (!like) {
-        return Response.json(
-          { error: 'Failed to like post' },
-          { status: 500 }
-        )
-      }
-
-      // Get updated post
-      const updatedPost = await getPostById(postId)
-      return Response.json({
-        message: 'Post liked successfully',
-        post: updatedPost,
-      })
     }
 
     if (req.method === 'DELETE') {

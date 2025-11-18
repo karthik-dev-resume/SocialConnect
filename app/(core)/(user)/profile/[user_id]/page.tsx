@@ -10,14 +10,16 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { apiRequest } from '@/lib/api/client'
 import { toast } from 'sonner'
-import type { User, Post } from '@/lib/db/types'
+import type { User, Post, UserStats } from '@/lib/db/types'
 import { UserPlus, UserMinus } from 'lucide-react'
+
+type UserWithStats = User & UserStats
 
 export default function ProfilePage() {
   const params = useParams()
   const userId = params.user_id as string
   const { user: currentUser } = useAuth()
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<UserWithStats | null>(null)
   const [posts, setPosts] = useState<Post[]>([])
   const [isFollowing, setIsFollowing] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -26,7 +28,7 @@ export default function ProfilePage() {
     try {
       setLoading(true)
       const [userData, postsData] = await Promise.all([
-        apiRequest<User & { followers_count: number; following_count: number; posts_count: number }>(
+        apiRequest<UserWithStats>(
           `/api/users/${userId}`
         ),
         apiRequest<{ results: Post[] }>(`/api/posts?author_id=${userId}`),
@@ -44,8 +46,9 @@ export default function ProfilePage() {
           // Ignore
         }
       }
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to load profile')
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load profile';
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -65,8 +68,9 @@ export default function ProfilePage() {
         toast.success('Following user')
       }
       fetchProfile()
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to follow/unfollow user')
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to follow/unfollow user';
+      toast.error(errorMessage)
     }
   }
 
@@ -148,15 +152,15 @@ export default function ProfilePage() {
                 {user.bio && <p className="mb-4">{user.bio}</p>}
                 <div className="flex space-x-6 text-sm">
                   <div>
-                    <span className="font-semibold">{(user as any).posts_count || 0}</span>
+                    <span className="font-semibold">{user.posts_count || 0}</span>
                     <span className="text-gray-500 ml-1">Posts</span>
                   </div>
                   <div>
-                    <span className="font-semibold">{(user as any).followers_count || 0}</span>
+                    <span className="font-semibold">{user.followers_count || 0}</span>
                     <span className="text-gray-500 ml-1">Followers</span>
                   </div>
                   <div>
-                    <span className="font-semibold">{(user as any).following_count || 0}</span>
+                    <span className="font-semibold">{user.following_count || 0}</span>
                     <span className="text-gray-500 ml-1">Following</span>
                   </div>
                 </div>

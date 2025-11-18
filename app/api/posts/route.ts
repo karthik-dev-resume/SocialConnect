@@ -25,9 +25,21 @@ async function handler(req: AuthenticatedRequest) {
         posts = await listPosts(limit, offset, authorId)
       }
 
+      // Add like status for current user to each post
+      const { checkLike } = await import('@/lib/db/queries')
+      const postsWithLikeStatus = await Promise.all(
+        posts.map(async (post) => {
+          const isLiked = await checkLike(post.id, req.user!.userId)
+          return {
+            ...post,
+            is_liked: isLiked,
+          }
+        })
+      )
+
       return Response.json({
-        results: posts,
-        count: posts.length,
+        results: postsWithLikeStatus,
+        count: postsWithLikeStatus.length,
       })
     }
 

@@ -21,8 +21,10 @@ export async function authenticateRequest(request: NextRequest): Promise<TokenPa
   }
 }
 
-export function requireAuth(handler: (req: AuthenticatedRequest, context: any) => Promise<Response>) {
-  return async (req: NextRequest, context: any) => {
+type RouteContext = { params?: Promise<{ [key: string]: string }> | { [key: string]: string } }
+
+export function requireAuth(handler: (req: AuthenticatedRequest, context: RouteContext) => Promise<Response>) {
+  return async (req: NextRequest, context: RouteContext) => {
     const user = await authenticateRequest(req)
     
     if (!user) {
@@ -36,8 +38,8 @@ export function requireAuth(handler: (req: AuthenticatedRequest, context: any) =
   }
 }
 
-export function requireAdmin(handler: (req: AuthenticatedRequest, context: any) => Promise<Response>) {
-  return async (req: NextRequest, context: any) => {
+export function requireAdmin(handler: (req: AuthenticatedRequest, context: RouteContext) => Promise<Response>) {
+  return async (req: NextRequest, context: RouteContext) => {
     const user = await authenticateRequest(req)
     
     if (!user) {

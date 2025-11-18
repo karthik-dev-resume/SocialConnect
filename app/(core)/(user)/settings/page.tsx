@@ -46,8 +46,9 @@ export default function SettingsPage() {
       })
       toast.success('Profile updated successfully!')
       refreshUser()
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to update profile')
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update profile';
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -66,8 +67,9 @@ export default function SettingsPage() {
       await apiRequestFormData('/api/users/upload-avatar', formData)
       toast.success('Avatar updated successfully!')
       refreshUser()
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to upload avatar')
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to upload avatar';
+      toast.error(errorMessage)
     } finally {
       setAvatarLoading(false)
     }
