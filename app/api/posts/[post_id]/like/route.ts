@@ -8,6 +8,7 @@ import {
   deleteLike,
   checkLike,
   getPostById,
+  createNotification,
 } from "@/lib/db/queries";
 
 async function handler(req: AuthenticatedRequest, context: RouteContext) {
@@ -58,6 +59,17 @@ async function handler(req: AuthenticatedRequest, context: RouteContext) {
             { status: 500 }
           );
         }
+        
+        // Create notification for the post author (if not the same user)
+        if (post.author_id !== req.user!.userId) {
+          await createNotification({
+            user_id: post.author_id,
+            type: "like",
+            actor_id: req.user!.userId,
+            post_id: postId,
+          });
+        }
+        
         const updatedPost = await getPostById(postId);
         return Response.json({
           message: "Post liked successfully",

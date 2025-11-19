@@ -81,3 +81,16 @@ export interface UserStats {
   posts_count: number
 }
 
+export interface Notification {
+  id: string
+  user_id: string
+  type: 'follow' | 'like' | 'comment'
+  actor_id: string
+  post_id?: string
+  comment_id?: string
+  is_read: boolean
+  created_at: string
+  actor?: User
+  post?: Post
+}
+
