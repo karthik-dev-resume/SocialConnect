@@ -1,5 +1,5 @@
 import { requireAuth, type AuthenticatedRequest, type RouteContext } from '@/lib/middleware/auth'
-import { createComment, getPostComments, getPostById } from '@/lib/db/queries'
+import { createComment, getPostComments, getPostById, createNotification } from '@/lib/db/queries'
 import { z } from 'zod'
 
 const createCommentSchema = z.object({
@@ -64,6 +64,17 @@ async function handler(
           { error: 'Failed to create comment' },
           { status: 500 }
         )
+      }
+
+      // Create notification for the post author (if not the same user)
+      if (post.author_id !== req.user!.userId) {
+        await createNotification({
+          user_id: post.author_id,
+          type: "comment",
+          actor_id: req.user!.userId,
+          post_id: postId,
+          comment_id: comment.id,
+        });
       }
 
       // Fetch comment with user

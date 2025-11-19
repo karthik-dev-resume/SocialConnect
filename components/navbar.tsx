@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Home, User, Settings, LogOut, Shield } from "lucide-react";
+import { NotificationsDropdown } from "@/components/notifications/notifications-dropdown";
 
 export function Navbar() {
   const { user, logout } = useAuth();
@@ -47,7 +48,9 @@ export function Navbar() {
               )}
             </div>
           </div>
-          <DropdownMenu>
+          <div className="flex items-center gap-2">
+            {user.role !== "admin" && <NotificationsDropdown />}
+            <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
@@ -94,6 +97,7 @@ export function Navbar() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
         </div>
       </div>
     </nav>

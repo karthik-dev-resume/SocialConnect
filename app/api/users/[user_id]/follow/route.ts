@@ -8,6 +8,7 @@ import {
   deleteFollow,
   checkFollow,
   getUserById,
+  createNotification,
 } from "@/lib/db/queries";
 
 async function handler(req: AuthenticatedRequest, context: RouteContext) {
@@ -55,6 +56,13 @@ async function handler(req: AuthenticatedRequest, context: RouteContext) {
           { status: 500 }
         );
       }
+
+      // Create notification for the user being followed
+      await createNotification({
+        user_id: followingId,
+        type: "follow",
+        actor_id: followerId,
+      });
 
       return Response.json({ message: "Successfully followed user", follow });
     }

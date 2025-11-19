@@ -7,6 +7,7 @@ import type {
   Like,
   Comment,
   UserStats,
+  Notification,
 } from "./types";
 
 function getSupabase() {
@@ -660,4 +661,93 @@ export async function deleteComment(
   await supabase.rpc("decrement_comment_count", { post_id: postId });
 
   return true;
+}
+
+// Notification Queries
+export async function createNotification(notificationData: {
+  user_id: string;
+  type: 'follow' | 'like' | 'comment';
+  actor_id: string;
+  post_id?: string;
+  comment_id?: string;
+}): Promise<Notification | null> {
+  const supabase = getSupabase();
+
+  // Don't create notification if user is notifying themselves
+  if (notificationData.user_id === notificationData.actor_id) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from("notifications")
+    .insert({
+      ...notificationData,
+      is_read: false,
+    })
+    .select()
+    .single();
+
+  if (error || !data) {
+    if (error) {
+      console.error("Error creating notification:", error);
+    }
+    return null;
+  }
+  return data as Notification;
+}
+
+export async function getUserNotifications(
+  userId: string,
+  limit = 50,
+  offset = 0
+): Promise<Notification[]> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("notifications")
+    .select("*, actor:users!notifications_actor_id_fkey(*), post:posts(*)")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (error || !data) return [];
+  return data as Notification[];
+}
+
+export async function getUnreadNotificationCount(
+  userId: string
+): Promise<number> {
+  const supabase = getSupabase();
+  const { count, error } = await supabase
+    .from("notifications")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("is_read", false);
+
+  if (error) return 0;
+  return count || 0;
+}
+
+export async function markNotificationAsRead(
+  notificationId: string
+): Promise<boolean> {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from("notifications")
+    .update({ is_read: true })
+    .eq("id", notificationId);
+
+  return !error;
+}
+
+export async function markAllNotificationsAsRead(
+  userId: string
+): Promise<boolean> {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from("notifications")
+    .update({ is_read: true })
+    .eq("user_id", userId)
+    .eq("is_read", false);
+
+  return !error;
 }
