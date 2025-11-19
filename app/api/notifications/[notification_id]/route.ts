@@ -1,15 +1,34 @@
-import { requireAuth, type AuthenticatedRequest } from "@/lib/middleware/auth";
+import {
+  requireAuth,
+  type AuthenticatedRequest,
+  type RouteContext,
+} from "@/lib/middleware/auth";
 import { markNotificationAsRead } from "@/lib/db/queries";
 
-async function handler(
-  req: AuthenticatedRequest,
-  { params }: { params: { notification_id: string } }
-) {
+async function handler(req: AuthenticatedRequest, context: RouteContext) {
   try {
+    if (!context.params) {
+      return Response.json(
+        { error: "Notification ID is required" },
+        { status: 400 }
+      );
+    }
+
+    const resolvedParams =
+      context.params instanceof Promise ? await context.params : context.params;
+    const notificationId = resolvedParams.notification_id;
+
+    if (!notificationId) {
+      return Response.json(
+        { error: "Notification ID is required" },
+        { status: 400 }
+      );
+    }
+
     if (req.method === "PATCH" || req.method === "PUT") {
       const body = await req.json();
       if (body.action === "mark_read") {
-        const success = await markNotificationAsRead(params.notification_id);
+        const success = await markNotificationAsRead(notificationId);
         if (!success) {
           return Response.json(
             { error: "Failed to mark notification as read" },
@@ -29,4 +48,3 @@ async function handler(
 
 export const PATCH = requireAuth(handler);
 export const PUT = requireAuth(handler);
-
